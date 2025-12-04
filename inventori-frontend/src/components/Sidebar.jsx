@@ -9,7 +9,7 @@ export default function Sidebar() {
       {/* User info */}
       <div className="sidebar-top">
         <div className="sidebar-user-avatar">
-          {user?.name?.charAt(0) || "A"}
+          {user?.name?.charAt(0).toUpperCase() || "A"}
         </div>
         <div className="sidebar-user-info">
           <div className="sidebar-user-name">{user?.name || "User"}</div>
@@ -22,33 +22,45 @@ export default function Sidebar() {
       {/* MASTER: khusus admin */}
       {user?.role === "admin" && (
         <div className="sidebar-section">
-          <div className="sidebar-section-title">Master</div>
+          <div className="sidebar-section-title">MASTER</div>
+
           <NavLink
             to="/barang"
             className={({ isActive }) =>
-              "side-link " + (isActive ? "side-link-active" : "")
+              "side-link" + (isActive ? " side-link-active" : "")
             }
           >
-            📦 Barang
+            📦 Barang / Peralatan
+          </NavLink>
+
+          <NavLink
+            to="/users"
+            className={({ isActive }) =>
+              "side-link" + (isActive ? " side-link-active" : "")
+            }
+          >
+            👥 Manajemen Staff
           </NavLink>
         </div>
       )}
 
       {/* TRANSAKSI: admin + staff */}
       <div className="sidebar-section">
-        <div className="sidebar-section-title">Transaksi</div>
+        <div className="sidebar-section-title">TRANSAKSI</div>
+
         <NavLink
           to="/barang-masuk"
           className={({ isActive }) =>
-            "side-link " + (isActive ? "side-link-active" : "")
+            "side-link" + (isActive ? " side-link-active" : "")
           }
         >
           📥 Barang Masuk
         </NavLink>
+
         <NavLink
           to="/barang-keluar"
           className={({ isActive }) =>
-            "side-link " + (isActive ? "side-link-active" : "")
+            "side-link" + (isActive ? " side-link-active" : "")
           }
         >
           📤 Barang Keluar
@@ -58,31 +70,32 @@ export default function Sidebar() {
       {/* LAPORAN: admin only */}
       {user?.role === "admin" && (
         <div className="sidebar-section">
-          <div className="sidebar-section-title">Laporan</div>
+          <div className="sidebar-section-title">LAPORAN</div>
+
           <NavLink
             to="/laporan"
             className={({ isActive }) =>
-              "side-link " + (isActive ? "side-link-active" : "")
+              "side-link" + (isActive ? " side-link-active" : "")
             }
           >
-            📊 Laporan
+            📊 Laporan Inventori
           </NavLink>
         </div>
       )}
+
+      {/* PENGATURAN */}
+      <div className="sidebar-section">
+        <div className="sidebar-section-title">PENGATURAN</div>
+
+        <NavLink
+          to="/profil"
+          className={({ isActive }) =>
+            "side-link" + (isActive ? " side-link-active" : "")
+          }
+        >
+          ⚙️ Profil Akun
+        </NavLink>
+      </div>
     </aside>
   );
-
-  {/* PENGATURAN */}
-<div className="sidebar-section">
-  <div className="sidebar-section-title">PENGATURAN</div>
-  <NavLink
-    to="/profil"
-    className={({ isActive }) =>
-      "side-link " + (isActive ? "side-link-active" : "")
-    }
-  >
-    Profil Akun
-  </NavLink>
-</div>
-
 }

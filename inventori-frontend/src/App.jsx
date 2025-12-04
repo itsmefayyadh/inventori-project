@@ -1,6 +1,5 @@
 // src/App.jsx
-import { Routes, Route, Navigate } from "react-router-dom";
-
+import { Routes, Route } from "react-router-dom";
 import Layout from "./Layout.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
@@ -11,41 +10,35 @@ import BarangMasukPage from "./pages/BarangMasukPage.jsx";
 import BarangKeluarPage from "./pages/BarangKeluarPage.jsx";
 import LaporanPage from "./pages/LaporanPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import UserManagementPage from "./pages/UserManagementPage.jsx";
 
 function App() {
   return (
     <Routes>
-      {/* Halaman login (tanpa layout) */}
+      {/* LOGIN */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Semua halaman yang butuh login dibungkus ProtectedRoute + Layout */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }
-      >
-        {/* Dashboard jadi index (/) */}
-        <Route index element={<DashboardPage />} />
+      {/* SEMUA HALAMAN YANG BUTUH LOGIN */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<Layout />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/barang" element={<BarangPage />} />
+          <Route path="/barang-masuk" element={<BarangMasukPage />} />
+          <Route path="/barang-keluar" element={<BarangKeluarPage />} />
+          <Route path="/laporan" element={<LaporanPage />} />
+          <Route path="/profil" element={<ProfilePage />} />
 
-        {/* Master data */}
-        <Route path="barang" element={<BarangPage />} />
-
-        {/* Transaksi */}
-        <Route path="barang-masuk" element={<BarangMasukPage />} />
-        <Route path="barang-keluar" element={<BarangKeluarPage />} />
-
-        {/* Laporan */}
-        <Route path="laporan" element={<LaporanPage />} />
-
-        {/* Profil user (admin/staff) */}
-        <Route path="profil" element={<ProfilePage />} />
+          {/* 🔐 HANYA ADMIN YANG BOLEH AKSES HALAMAN INI */}
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <UserManagementPage />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
       </Route>
-
-      {/* Fallback kalau user ke path yang nggak dikenali */}
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

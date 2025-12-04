@@ -30,7 +30,7 @@ function Layout() {
             </div>
           </div>
 
-          {/* MASTER */}
+          {/* MASTER – khusus admin */}
           {isAdmin && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">MASTER</div>
@@ -40,7 +40,7 @@ function Layout() {
             </div>
           )}
 
-          {/* TRANSAKSI */}
+          {/* TRANSAKSI – admin & staff */}
           <div className="sidebar-section">
             <div className="sidebar-section-title">TRANSAKSI</div>
             <NavLink to="/barang-masuk" className={linkClass}>
@@ -51,7 +51,7 @@ function Layout() {
             </NavLink>
           </div>
 
-          {/* LAPORAN */}
+          {/* LAPORAN – kalau mau hanya admin, pakai {isAdmin && (...)} */}
           <div className="sidebar-section">
             <div className="sidebar-section-title">LAPORAN</div>
             <NavLink to="/laporan" className={linkClass}>
@@ -59,12 +59,20 @@ function Layout() {
             </NavLink>
           </div>
 
-          {/* PENGATURAN / PROFIL */}
+          {/* PENGATURAN */}
           <div className="sidebar-section">
             <div className="sidebar-section-title">PENGATURAN</div>
+
             <NavLink to="/profil" className={linkClass}>
               Profil Saya
             </NavLink>
+
+            {/* 🌟 MENU BARU: hanya muncul kalau role = admin */}
+            {isAdmin && (
+              <NavLink to="/users" className={linkClass}>
+                Manajemen Staff
+              </NavLink>
+            )}
           </div>
         </aside>
 
