@@ -1,131 +1,112 @@
 // src/pages/ProfilePage.jsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 
 export default function ProfilePage() {
   const { user, updateProfile, updatePassword } = useAuth();
 
-  const [profileForm, setProfileForm] = useState({
-    name: "",
-    email: "",
-    role: "",
+  const [form, setForm] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
   });
 
-  const [passwordForm, setPasswordForm] = useState({
+  const [pwdForm, setPwdForm] = useState({
     oldPassword: "",
     newPassword: "",
-    confirmPassword: "",
   });
 
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setProfileForm({
-        name: user.name || "",
-        email: user.email || "",
-        role: user.role || "staff",
-      });
-    }
-  }, [user]);
+  const [saving, setSaving] = useState(false);
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
   const handleProfileChange = (e) => {
-    const { name, value } = e.target;
-    setProfileForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordForm((prev) => ({ ...prev, [name]: value }));
+  const handlePwdChange = (e) => {
+    setPwdForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    setSavingProfile(true);
+    setMessage("");
+    setSaving(true);
     try {
-      await updateProfile({
-        name: profileForm.name,
-        // kalau nanti email bisa diganti, tinggal tambahkan: email: profileForm.email
-      });
-      alert("Profil berhasil diperbarui.");
+      await updateProfile({ name: form.name, email: form.email });
+      setMessage("Profil berhasil diperbarui.");
     } catch (err) {
-      console.error(err);
-      alert("Gagal menyimpan profil.");
+      setMessage("Gagal menyimpan profil.");
     } finally {
-      setSavingProfile(false);
+      setSaving(false);
     }
   };
 
-  const handleSavePassword = async (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
-
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert("Konfirmasi password baru tidak sama.");
+    setMessage("");
+    if (!pwdForm.newPassword) {
+      setMessage("Password baru tidak boleh kosong.");
       return;
     }
-
-    setSavingPassword(true);
+    setPwdSaving(true);
     try {
       await updatePassword({
-        oldPassword: passwordForm.oldPassword,
-        newPassword: passwordForm.newPassword,
+        oldPassword: pwdForm.oldPassword,
+        newPassword: pwdForm.newPassword,
       });
-      alert("Password berhasil diubah (dummy).");
-      setPasswordForm({
-        oldPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      setMessage("Password (dummy) berhasil diubah.");
+      setPwdForm({ oldPassword: "", newPassword: "" });
     } catch (err) {
-      console.error(err);
-      alert("Gagal mengubah password.");
+      setMessage("Gagal mengubah password.");
     } finally {
-      setSavingPassword(false);
+      setPwdSaving(false);
     }
   };
-
-  const initial = (user?.name || "U").charAt(0).toUpperCase();
-  const roleLabel =
-    user?.role === "admin"
-      ? "Administrator"
-      : user?.role === "staff"
-      ? "Staff"
-      : "Pengguna";
 
   return (
     <div className="page">
+      {/* Judul halaman */}
       <div className="page-section-header">
-        <h1 className="page-section-title">Profil Akun</h1>
+        <h1 className="page-section-title">Profil Saya</h1>
         <p className="page-section-subtitle">
-          Kelola informasi akun dan keamanan login Anda.
+          Lihat dan perbarui informasi akun Anda.
         </p>
       </div>
 
-      <div className="page-grid-2 profile-grid">
-        {/* CARD PROFIL */}
+      <div className="page-grid-2">
+        {/* Card profil */}
         <div className="form-card">
-          <div className="form-card-header profile-header">
-            <div className="profile-avatar">{initial}</div>
-            <div>
-              <h2 className="form-card-title">
-                {profileForm.name || "Pengguna"}
-              </h2>
-              <p className="form-card-subtitle">
-                <span className="profile-role-badge">{roleLabel}</span>
-              </p>
-            </div>
+          <div className="form-card-header">
+            <h2 className="form-card-title">Informasi Akun</h2>
+            <p className="form-card-subtitle">
+              Data dasar akun yang digunakan untuk login.
+            </p>
           </div>
+
+          {message && (
+            <div
+              style={{
+                marginBottom: 12,
+                fontSize: 12,
+                color: "#047857",
+                backgroundColor: "#ecfdf5",
+                border: "1px solid #bbf7d0",
+                borderRadius: 6,
+                padding: "6px 8px",
+              }}
+            >
+              {message}
+            </div>
+          )}
 
           <form className="form-grid" onSubmit={handleSaveProfile}>
             <div className="form-group">
-              <label>Nama Lengkap</label>
+              <label>Nama</label>
               <input
                 type="text"
                 name="name"
-                value={profileForm.name}
+                value={form.name}
                 onChange={handleProfileChange}
-                placeholder="Nama lengkap anda"
                 required
               />
             </div>
@@ -135,51 +116,52 @@ export default function ProfilePage() {
               <input
                 type="email"
                 name="email"
-                value={profileForm.email}
-                readOnly     // kalau mau bisa diubah, hapus readOnly & disabled
-                disabled
+                value={form.email}
+                onChange={handleProfileChange}
+                required
               />
-              <small className="profile-hint">
-                Email tidak dapat diubah dari aplikasi ini.
-              </small>
             </div>
 
             <div className="form-group">
               <label>Role</label>
-              <input type="text" value={roleLabel} readOnly disabled />
+              <input
+                type="text"
+                value={user?.role === "admin" ? "Admin" : "Staff"}
+                disabled
+              />
             </div>
 
             <div className="form-actions">
               <button
                 type="submit"
                 className="btn-primary"
-                disabled={savingProfile}
+                disabled={saving}
+                style={{ width: "auto", minWidth: 120 }}
               >
-                {savingProfile ? "Menyimpan..." : "Simpan Perubahan"}
+                {saving ? "Menyimpan..." : "Simpan Profil"}
               </button>
             </div>
           </form>
         </div>
 
-        {/* CARD PASSWORD */}
+        {/* Card password */}
         <div className="form-card">
           <div className="form-card-header">
-            <h2 className="form-card-title">Keamanan & Password</h2>
+            <h2 className="form-card-title">Ubah Password</h2>
             <p className="form-card-subtitle">
-              Ganti password Anda secara berkala untuk menjaga keamanan akun.
+              Untuk demo ini, perubahan password hanya disimpan secara dummy.
             </p>
           </div>
 
-          <form className="form-grid" onSubmit={handleSavePassword}>
+          <form className="form-grid" onSubmit={handleChangePassword}>
             <div className="form-group">
               <label>Password Lama</label>
               <input
                 type="password"
                 name="oldPassword"
-                value={passwordForm.oldPassword}
-                onChange={handlePasswordChange}
-                placeholder="Masukkan password lama"
-                required
+                value={pwdForm.oldPassword}
+                onChange={handlePwdChange}
+                placeholder="••••••••"
               />
             </div>
 
@@ -188,21 +170,9 @@ export default function ProfilePage() {
               <input
                 type="password"
                 name="newPassword"
-                value={passwordForm.newPassword}
-                onChange={handlePasswordChange}
-                placeholder="Minimal 6 karakter"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Konfirmasi Password Baru</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={passwordForm.confirmPassword}
-                onChange={handlePasswordChange}
-                placeholder="Ulangi password baru"
+                value={pwdForm.newPassword}
+                onChange={handlePwdChange}
+                placeholder="••••••••"
                 required
               />
             </div>
@@ -210,10 +180,10 @@ export default function ProfilePage() {
             <div className="form-actions">
               <button
                 type="submit"
-                className="btn-primary"
-                disabled={savingPassword}
+                className="btn-secondary btn-sm"
+                disabled={pwdSaving}
               >
-                {savingPassword ? "Memproses..." : "Ubah Password"}
+                {pwdSaving ? "Memproses..." : "Ubah Password"}
               </button>
             </div>
           </form>

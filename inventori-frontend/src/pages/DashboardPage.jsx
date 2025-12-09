@@ -3,92 +3,212 @@ import { useAuth } from "../context/AuthContext.jsx";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const isStaff = user?.role === "staff";
 
-  // Sementara: statistik default 0 (belum ada data)
-  const totalBarang = 0;
-  const totalMasuk = 0;
-  const totalKeluar = 0;
-  const jenisBarang = 0;
-  const dataUser = 0;
+  const summary = {
+    totalBarang: 0,
+    totalBarangMasuk: 0,
+    totalBarangKeluar: 0,
+    totalUser: 0,
+    totalTransaksiSaya: 0,
+  };
 
-  // Tabel stok minimum juga masih kosong
-  const stokMin = []; // nanti diisi dari API kalau backend sudah siap
+  const minStock = [];
+  const recentTransactions = [];
 
+  /* =================== DASHBOARD STAFF =================== */
+  if (isStaff) {
+    return (
+      <div className="page">
+        <div className="page-header-bar">
+          <div className="page-header-icon">📊</div>
+          <div>
+            <h2 className="page-header-title">Dashboard</h2>
+            <p className="page-header-subtitle">
+              Selamat datang, <strong>{user?.name || "Staff"}</strong>. Berikut
+              ringkasan aktivitas inventori Anda.
+            </p>
+          </div>
+        </div>
+
+        {/* Kartu ringkasan staff */}
+        <div className="stats-row">
+          <div className="stat-card small">
+            <div className="stat-icon green">📥</div>
+            <div className="stat-info">
+              <span className="stat-label">Data Barang Masuk</span>
+              <span className="stat-value">
+                {summary.totalBarangMasuk ?? 0}
+              </span>
+            </div>
+          </div>
+
+          <div className="stat-card small">
+            <div className="stat-icon orange">📤</div>
+            <div className="stat-info">
+              <span className="stat-label">Data Barang Keluar</span>
+              <span className="stat-value">
+                {summary.totalBarangKeluar ?? 0}
+              </span>
+            </div>
+          </div>
+
+          <div className="stat-card small">
+            <div className="stat-icon blue">🧾</div>
+            <div className="stat-info">
+              <span className="stat-label">Transaksi yang Anda catat</span>
+              <span className="stat-value">
+                {summary.totalTransaksiSaya ?? 0}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Aksi cepat */}
+        <div className="table-card" style={{ marginTop: 12, paddingTop: 12 }}>
+          <div className="table-card-header">
+            <div>
+              <div className="table-card-title">Aksi Cepat</div>
+              <div className="table-card-title-count">
+                Catat transaksi barang lebih cepat.
+              </div>
+            </div>
+            <div className="table-card-tools">
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={() => (window.location.href = "/barang-masuk")}
+              >
+                + Barang Masuk
+              </button>
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                onClick={() => (window.location.href = "/barang-keluar")}
+              >
+                + Barang Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Riwayat transaksi staff */}
+        <div className="table-card">
+          <div className="table-card-header">
+            <div>
+              <div className="table-card-title">Riwayat Transaksi Terbaru</div>
+              <div className="table-card-title-count">
+                Menampilkan beberapa transaksi barang masuk & keluar terakhir
+                yang Anda catat.
+              </div>
+            </div>
+          </div>
+
+          <div className="table-wrapper">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th style={{ width: "70px" }}>Tanggal</th>
+                  <th style={{ width: "80px" }}>Jenis</th>
+                  <th>Nama Barang</th>
+                  <th style={{ width: "80px" }}>Jumlah</th>
+                  <th>Keterangan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: "center" }}>
+                      Belum ada transaksi yang dicatat. Silakan mulai dari menu{" "}
+                      <strong>Barang Masuk</strong> atau{" "}
+                      <strong>Barang Keluar</strong>.
+                    </td>
+                  </tr>
+                ) : (
+                  recentTransactions.map((tx) => (
+                    <tr key={tx.id}>
+                      <td>{tx.tanggal}</td>
+                      <td>{tx.jenis}</td>
+                      <td>{tx.barang}</td>
+                      <td>{tx.jumlah}</td>
+                      <td>{tx.keterangan || "-"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="table-footer">
+            {recentTransactions.length === 0
+              ? "Menunggu transaksi pertama Anda."
+              : `Menampilkan ${recentTransactions.length} transaksi terbaru.`}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* =================== DASHBOARD ADMIN =================== */
   return (
     <div className="page">
-      {/* Header di dalam konten */}
       <div className="page-header-bar">
-        <div className="page-header-icon">🏠</div>
+        <div className="page-header-icon">📊</div>
         <div>
-          <h1 className="page-header-title">Dashboard</h1>
+          <h2 className="page-header-title">Dashboard</h2>
           <p className="page-header-subtitle">
-            Selamat datang, <strong>{user?.name || "Admin"}</strong>. Berikut
-            ringkasan inventori kantor Anda.
+            Hai, <strong>{user?.name || "Admin"}</strong>. Pantau ringkasan
+            inventori gudang di sini.
           </p>
         </div>
       </div>
 
-      {/* Kartu statistik atas */}
-      <div className="stats-row">
-        <div className="stat-card">
-          <div className="stat-icon purple">📦</div>
-          <div className="stat-info">
-            <div className="stat-label">Data Barang</div>
-            <div className="stat-value">{totalBarang}</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon green">⬇️</div>
-          <div className="stat-info">
-            <div className="stat-label">Data Barang Masuk</div>
-            <div className="stat-value">{totalMasuk}</div>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon orange">⬆️</div>
-          <div className="stat-info">
-            <div className="stat-label">Data Barang Keluar</div>
-            <div className="stat-value">{totalKeluar}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Kartu statistik kedua baris */}
       <div className="stats-row">
         <div className="stat-card small">
-          <div className="stat-icon yellow">🗂</div>
+          <div className="stat-icon purple">📦</div>
           <div className="stat-info">
-            <div className="stat-label">Data Jenis Barang</div>
-            <div className="stat-value">{jenisBarang}</div>
+            <span className="stat-label">Data Barang</span>
+            <span className="stat-value">{summary.totalBarang ?? 0}</span>
+          </div>
+        </div>
+
+        <div className="stat-card small">
+          <div className="stat-icon green">📥</div>
+          <div className="stat-info">
+            <span className="stat-label">Data Barang Masuk</span>
+            <span className="stat-value">
+              {summary.totalBarangMasuk ?? 0}
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card small">
+          <div className="stat-icon orange">📤</div>
+          <div className="stat-info">
+            <span className="stat-label">Data Barang Keluar</span>
+            <span className="stat-value">
+              {summary.totalBarangKeluar ?? 0}
+            </span>
           </div>
         </div>
 
         <div className="stat-card small">
           <div className="stat-icon blue">👤</div>
           <div className="stat-info">
-            <div className="stat-label">Data User</div>
-            <div className="stat-value">{dataUser}</div>
+            <span className="stat-label">Data User</span>
+            <span className="stat-value">{summary.totalUser ?? 0}</span>
           </div>
         </div>
       </div>
 
-      {/* Tabel stok minimum */}
       <div className="table-card">
         <div className="table-card-header">
-          <div className="table-card-title">
-            Stok barang telah mencapai batas minimum
-          </div>
-          <div className="table-card-tools">
-            <span className="table-small-label">Tampilkan</span>
-            <select className="table-select" disabled>
-              <option>10</option>
-            </select>
-            <span className="table-small-label">data</span>
-            <div className="table-search-wrapper">
-              <span className="table-small-label">Cari:</span>
-              <input className="table-search" disabled />
+          <div>
+            <div className="table-card-title">
+              Stok barang telah mencapai batas minimum
+            </div>
+            <div className="table-card-title-count">
+              Daftar barang yang perlu segera dicek stoknya.
             </div>
           </div>
         </div>
@@ -97,35 +217,35 @@ export default function DashboardPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>No.</th>
+                <th style={{ width: "50px" }}>No.</th>
                 <th>ID Barang</th>
                 <th>Nama Barang</th>
-                <th>Jenis Barang</th>
-                <th>Stok</th>
-                <th>Satuan</th>
+                <th style={{ width: "120px" }}>Jenis Barang</th>
+                <th style={{ width: "80px" }}>Stok</th>
+                <th style={{ width: "80px" }}>Satuan</th>
               </tr>
             </thead>
-
-            {/* Kalau belum ada data, tampilkan 1 baris pesan kosong */}
             <tbody>
-              {stokMin.length === 0 ? (
+              {minStock.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", color: "#6b7280", fontSize: "12px" }}>
+                  <td colSpan={6} style={{ textAlign: "center" }}>
                     Belum ada data stok minimum. Data akan muncul setelah Anda
                     menambahkan barang dan mengatur stoknya.
                   </td>
                 </tr>
               ) : (
-                stokMin.map((row, index) => (
-                  <tr key={row.id}>
-                    <td>{index + 1}</td>
-                    <td>{row.id}</td>
-                    <td>{row.nama}</td>
-                    <td>{row.jenis}</td>
+                minStock.map((item, idx) => (
+                  <tr key={item.id || idx}>
+                    <td>{idx + 1}</td>
+                    <td>{item.kode || item.idBarang}</td>
+                    <td>{item.nama || item.namaBarang}</td>
+                    <td>{item.jenis || item.jenisBarang}</td>
                     <td>
-                      <span className="badge-stock">{row.stok}</span>
+                      <span className="badge-stock">
+                        {item.stok ?? item.stock ?? 0}
+                      </span>
                     </td>
-                    <td>{row.satuan}</td>
+                    <td>{item.satuan || "-"}</td>
                   </tr>
                 ))
               )}
@@ -134,9 +254,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="table-footer">
-          {stokMin.length === 0
-            ? "Belum ada data ditampilkan."
-            : `Menampilkan 1 sampai ${stokMin.length} dari ${stokMin.length} data`}
+          {minStock.length === 0
+            ? "Semua stok dalam kondisi aman. 🎉"
+            : `Menampilkan ${minStock.length} barang dengan stok minimum.`}
         </div>
       </div>
     </div>

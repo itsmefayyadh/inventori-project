@@ -1,105 +1,181 @@
 // src/pages/BarangPage.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const DEFAULT_CATEGORIES = [
+  "IT",
+  "Elektronik",
+  "Furniture",
+  "Alat Tulis",
+  "Kendaraan",
+  "Lainnya",
+];
+
+const STORAGE_KEY = "inventori_barang";
 
 export default function BarangPage() {
+  const [items, setItems] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [previewPhoto, setPreviewPhoto] = useState(null);
+
   const [form, setForm] = useState({
     nama: "",
     kode: "",
     kategori: "",
-    stokAwal: 0,
     satuan: "pcs",
+    stokAwal: 0,
     hargaBeli: "",
     hargaJual: "",
+    foto: "", // akan menyimpan URL lokal (sementara)
   });
 
-  // sementara simpan di state lokal (belum konek backend)
-  const [barangList, setBarangList] = useState([]);
+  // --- Load data awal dari localStorage (sementara, nanti bisa diganti API) ---
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        setItems(parsed);
+      } catch {
+        // lewat saja
+      }
+    }
+  }, []);
 
-  const kategoriOptions = [
-    "ATK",
-    "Elektronik",
-    "Furniture",
-    "Kebersihan",
-    "Lainnya",
-  ];
+  const syncToStorage = (next) => {
+    setItems(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  };
 
+  const resetForm = () => {
+    setForm({
+      nama: "",
+      kode: "",
+      kategori: "",
+      satuan: "pcs",
+      stokAwal: 0,
+      hargaBeli: "",
+      hargaJual: "",
+      foto: "",
+    });
+    setEditingId(null);
+    setPreviewPhoto(null);
+  };
+
+  // --- Handle input text/number/select ---
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "stokAwal" ? Number(value || 0) : value,
+    }));
+  };
+
+  // --- Handle foto (hanya preview + simpan data URL lokal) ---
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setPreviewPhoto(null);
+      setForm((prev) => ({ ...prev, foto: "" }));
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setPreviewPhoto(url);
+    setForm((prev) => ({ ...prev, foto: url }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // validasi sederhana
-    if (!form.nama || !form.kode || !form.kategori) {
-      alert("Nama, kode dan kategori wajib diisi.");
+    if (!form.nama || !form.kode) {
+      alert("Nama dan Kode Barang wajib diisi.");
       return;
     }
 
-    const newItem = {
-      id: Date.now(),
-      nama: form.nama,
-      kode: form.kode,
-      kategori: form.kategori,
-      stokAwal: Number(form.stokAwal) || 0,
-      satuan: form.satuan || "pcs",
-      hargaBeli: Number(form.hargaBeli) || 0,
-      hargaJual: Number(form.hargaJual) || 0,
-    };
+    if (editingId) {
+      // update
+      const next = items.map((it) =>
+        it.id === editingId ? { ...it, ...form } : it
+      );
+      syncToStorage(next);
+    } else {
+      // tambah baru
+      const newItem = {
+        id: crypto.randomUUID(),
+        ...form,
+        createdAt: new Date().toISOString(),
+      };
+      syncToStorage([...items, newItem]);
+    }
 
-    setBarangList((prev) => [...prev, newItem]);
-
-    // reset form
-    setForm({
-      nama: "",
-      kode: "",
-      kategori: "",
-      stokAwal: 0,
-      satuan: "pcs",
-      hargaBeli: "",
-      hargaJual: "",
-    });
+    resetForm();
   };
 
-  const totalBarang = barangList.length;
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setForm({
+      nama: item.nama,
+      kode: item.kode,
+      kategori: item.kategori,
+      satuan: item.satuan,
+      stokAwal: item.stokAwal,
+      hargaBeli: item.hargaBeli || "",
+      hargaJual: item.hargaJual || "",
+      foto: item.foto || "",
+    });
+    setPreviewPhoto(item.foto || null);
+  };
+
+  const handleDelete = (id) => {
+    if (!confirm("Hapus peralatan ini?")) return;
+    const next = items.filter((it) => it.id !== id);
+    syncToStorage(next);
+    if (editingId === id) resetForm();
+  };
+
+  // --- Sorting sederhana: berdasarkan nama ---
+  const sortedItems = [...items].sort((a, b) =>
+    a.nama.localeCompare(b.nama, "id")
+  );
 
   return (
     <div className="page">
-      {/* Header section */}
+      {/* Judul Halaman */}
       <div className="page-section-header">
-        <h1 className="page-section-title">Data Barang</h1>
+        <h1 className="page-section-title">Data Peralatan Kantor</h1>
         <p className="page-section-subtitle">
-          Kelola master barang untuk kebutuhan transaksi.
+          Kelola seluruh inventaris kantor: tambah, ubah, dan hapus data alat.
         </p>
       </div>
 
-      {/* Dua kolom: kiri form, kanan tabel */}
       <div className="page-grid-2">
-        {/* KIRI: FORM TAMBAH BARANG */}
+        {/* ====================== FORM PERALATAN ====================== */}
         <div className="form-card">
           <div className="form-card-header">
-            <h2 className="form-card-title">Tambah Barang</h2>
+            <h2 className="form-card-title">
+              {editingId ? "Edit Peralatan" : "Tambah Peralatan"}
+            </h2>
             <p className="form-card-subtitle">
-              Isi data barang dengan lengkap, kemudian klik <b>Tambah</b>.
+              Isi informasi peralatan kantor, termasuk kategori dan stok awal.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="form-grid">
+            {/* Nama & Kode */}
             <div className="form-group">
-              <label>Nama Barang</label>
+              <label>Nama Peralatan</label>
               <input
                 type="text"
                 name="nama"
                 value={form.nama}
                 onChange={handleChange}
-                placeholder="Contoh: Kertas A4 70gsm"
+                placeholder="Contoh: Kursi Kerja Hitam"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label>Kode Barang</label>
+              <label>Kode Peralatan</label>
               <input
                 type="text"
                 name="kode"
@@ -110,34 +186,24 @@ export default function BarangPage() {
               />
             </div>
 
-            <div className="form-group">
-              <label>Kategori</label>
-              <select
-                name="kategori"
-                value={form.kategori}
-                onChange={handleChange}
-                required
-              >
-                <option value="">-- Pilih Kategori --</option>
-                {kategoriOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </div>
-
+            {/* Kategori & Satuan */}
             <div className="form-group-inline">
               <div className="form-group">
-                <label>Stok Awal</label>
-                <input
-                  type="number"
-                  name="stokAwal"
-                  value={form.stokAwal}
+                <label>Kategori</label>
+                <select
+                  name="kategori"
+                  value={form.kategori}
                   onChange={handleChange}
-                  min="0"
-                />
+                >
+                  <option value="">-- Pilih Kategori --</option>
+                  {DEFAULT_CATEGORIES.map((kat) => (
+                    <option key={kat} value={kat}>
+                      {kat}
+                    </option>
+                  ))}
+                </select>
               </div>
+
               <div className="form-group">
                 <label>Satuan</label>
                 <input
@@ -145,90 +211,155 @@ export default function BarangPage() {
                   name="satuan"
                   value={form.satuan}
                   onChange={handleChange}
-                  placeholder="pcs / box / unit"
+                  placeholder="pcs, unit, set, dll"
                 />
               </div>
             </div>
 
+            {/* Stok Awal & Harga */}
             <div className="form-group-inline">
               <div className="form-group">
-                <label>Harga Beli</label>
+                <label>Stok Awal</label>
+                <input
+                  type="number"
+                  name="stokAwal"
+                  min="0"
+                  value={form.stokAwal}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Harga Beli (opsional)</label>
                 <input
                   type="number"
                   name="hargaBeli"
+                  min="0"
                   value={form.hargaBeli}
                   onChange={handleChange}
-                  min="0"
-                  placeholder="0"
-                />
-              </div>
-              <div className="form-group">
-                <label>Harga Jual</label>
-                <input
-                  type="number"
-                  name="hargaJual"
-                  value={form.hargaJual}
-                  onChange={handleChange}
-                  min="0"
                   placeholder="0"
                 />
               </div>
             </div>
 
+            <div className="form-group">
+              <label>Harga Jual (opsional)</label>
+              <input
+                type="number"
+                name="hargaJual"
+                min="0"
+                value={form.hargaJual}
+                onChange={handleChange}
+                placeholder="0"
+              />
+            </div>
+
+            {/* Foto (opsional) */}
+            <div className="form-group">
+              <label>Foto Peralatan (opsional)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+              />
+              {previewPhoto && (
+                <div className="item-photo-preview">
+                  <img
+                    src={previewPhoto}
+                    alt="Preview"
+                    className="item-photo-thumb"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Tombol */}
             <div className="form-actions">
               <button type="submit" className="btn-primary">
-                Tambah Barang
+                {editingId ? "Simpan Perubahan" : "Tambah Peralatan"}
               </button>
+              {editingId && (
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm"
+                  onClick={resetForm}
+                  style={{ marginLeft: 8 }}
+                >
+                  Batal Edit
+                </button>
+              )}
             </div>
           </form>
         </div>
 
-        {/* KANAN: DAFTAR BARANG */}
+        {/* ====================== TABEL PERALATAN ====================== */}
         <div className="table-card">
           <div className="table-card-header">
-            <div className="table-card-title">
-              Daftar Barang{" "}
+            <div>
+              <span className="table-card-title">Daftar Peralatan</span>
               <span className="table-card-title-count">
-                (Total: {totalBarang} data)
+                ({items.length} data)
               </span>
             </div>
+            {/* nanti bisa ditambah filter/search kalau perlu */}
           </div>
 
           <div className="table-wrapper">
             <table className="table">
               <thead>
                 <tr>
-                  <th>No.</th>
+                  <th>Foto</th>
                   <th>Kode</th>
-                  <th>Nama Barang</th>
+                  <th>Nama Peralatan</th>
                   <th>Kategori</th>
-                  <th>Stok</th>
                   <th>Satuan</th>
-                  <th>Harga Beli</th>
-                  <th>Harga Jual</th>
+                  <th>Stok Awal</th>
+                  <th>Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {barangList.length === 0 ? (
+                {sortedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: "center", fontSize: "12px", color: "#6b7280" }}>
-                      Belum ada barang yang terdaftar. Tambahkan barang melalui
+                    <td colSpan={7} style={{ textAlign: "center" }}>
+                      Belum ada peralatan yang terdaftar. Tambahkan data dari
                       form di sebelah kiri.
                     </td>
                   </tr>
                 ) : (
-                  barangList.map((item, index) => (
+                  sortedItems.map((item) => (
                     <tr key={item.id}>
-                      <td>{index + 1}</td>
+                      <td>
+                        {item.foto ? (
+                          <img
+                            src={item.foto}
+                            alt={item.nama}
+                            className="item-photo-thumb"
+                          />
+                        ) : (
+                          <span className="item-photo-placeholder">-</span>
+                        )}
+                      </td>
                       <td>{item.kode}</td>
                       <td>{item.nama}</td>
-                      <td>{item.kategori}</td>
+                      <td>{item.kategori || "-"}</td>
+                      <td>{item.satuan || "-"}</td>
+                      <td>{item.stokAwal}</td>
                       <td>
-                        <span className="badge-stock">{item.stokAwal}</span>
+                        <button
+                          type="button"
+                          className="table-action-link"
+                          onClick={() => handleEdit(item)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="table-action-link danger"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          Hapus
+                        </button>
                       </td>
-                      <td>{item.satuan}</td>
-                      <td>Rp {item.hargaBeli.toLocaleString("id-ID")}</td>
-                      <td>Rp {item.hargaJual.toLocaleString("id-ID")}</td>
                     </tr>
                   ))
                 )}
@@ -237,9 +368,8 @@ export default function BarangPage() {
           </div>
 
           <div className="table-footer">
-            {barangList.length === 0
-              ? "Belum ada data ditampilkan."
-              : `Menampilkan 1 sampai ${barangList.length} dari ${barangList.length} data`}
+            Stok awal akan digunakan sebagai dasar perhitungan ketika transaksi
+            barang masuk dan keluar berjalan.
           </div>
         </div>
       </div>
