@@ -26,9 +26,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Login with backend API
-  const login = async (email, password) => {
+  const login = async (email, password, recaptchaToken = null) => {
     try {
-      const response = await api.post("/login", { email, password });
+      const response = await api.post("/login", { 
+        email, 
+        password,
+        recaptcha_token: recaptchaToken
+      });
       const { token, user: userData } = response.data;
 
       // Save token and user data
@@ -41,7 +45,7 @@ export function AuthProvider({ children }) {
       if (error.response?.status === 401) {
         throw new Error("INVALID_CREDENTIAL");
       }
-      throw new Error(error.response?.data?.message || "Login failed");
+      throw error;
     }
   };
 

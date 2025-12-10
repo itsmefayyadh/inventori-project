@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Client;
 
 class AuthController extends Controller
 {
@@ -38,16 +40,53 @@ class AuthController extends Controller
         ], 201);
     }
 
+    // Verify reCAPTCHA token
+    private function verifyRecaptcha($token)
+    {
+        $secretKey = env('RECAPTCHA_SECRET_KEY');
+        
+        // Skip verification if no secret key is set (for development)
+        if (empty($secretKey)) {
+            return true;
+        }
+
+        try {
+            $client = new Client();
+            $response = $client->post('https://www.google.com/recaptcha/api/siteverify', [
+                'form_params' => [
+                    'secret' => $secretKey,
+                    'response' => $token,
+                ]
+            ]);
+
+            $body = json_decode($response->getBody(), true);
+            return $body['success'] ?? false;
+        } catch (\Exception $e) {
+            Log::error('reCAPTCHA verification error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     // Login user
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required',
+            'recaptcha_token' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Verify reCAPTCHA if token is provided
+        if ($request->filled('recaptcha_token')) {
+            if (!$this->verifyRecaptcha($request->recaptcha_token)) {
+                return response()->json([
+                    'message' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.'
+                ], 422);
+            }
         }
 
         if (!Auth::attempt($request->only('email', 'password'))) {
